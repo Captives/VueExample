@@ -1,4 +1,5 @@
+var express = require('express');
+var app = express();
+app.use(express.static('./public'));
 
-process.env.NODE_ENV = process.env.NODE_ENV || 'dev';
-var run = require('./server/RedisServer');
-run(2443);
+app.listen(3000);
