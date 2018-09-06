@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Vue Websocket</title>
+    <link href="bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+    <style>
+        li{
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+        }
+
+        .row{
+             margin-right: 0px;
+             margin-left: 0px;
+        }
+
+        .chat{
+            max-height: 500px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .chat ol.list-group{
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div id="app" class="container">
+    <h1>{{title}}
+        <button class="btn btn-info btn-md" v-show="!connected" @click="join()"> 登入 </button>
+        <span class="badge badge-secondary">{{userData.pid}}</span>
+    </h1>
+    <div class="input-group row alert alert-info" v-show="connected">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">TEXT : </span>
+        </div>
+        <input id="textinput" type="text" class="form-control" placeholder="input text" aria-label="Username"
+               aria-describedby="basic-addon1">
+
+        <div class="btn-group input-group-append ml-2" role="group">
+            <button class="btn btn-info" @click="send()">发送消息</button>
+            <button class="btn btn-danger" @click="level()">登出</button>
+        </div>
+    </div>
+    <div class="row alert alert-danger" v-show="connected">
+        <div class="col-lg-4 col-lg-4 col-md-5">
+            <ul class="list-group">
+                <li class="list-group-item active">个人信息</li>
+                <li class="list-group-item ">TD => {{userData.td}}</li>
+                <li class="list-group-item">PID => {{userData.pid}}</li>
+                <li class="list-group-item">SID => {{userData.sid}}</li>
+                <li class="list-group-item">Address => {{userData.address}}</li>
+            </ul>
+        </div>
+        <div class="col-lg-8 col-lg-8 col-md-7">
+            <ul class="list-group">
+                <li class="list-group-item active">数据汇总</li>
+                <li class="list-group-item ">TD => {{statData.td}}</li>
+                <li class="list-group-item">PID => {{statData.pid}}</li>
+                <li class="list-group-item">SID => {{statData.sid}}</li>
+                <li class="list-group-item">Address => {{statData.time}}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="chat row alert alert-success" v-show="connected && textlist.length > 0">
+        <ol class="list-group col-lg-12">
+            <li class="list-group-item active">聊天记录</li>
+            <li class="list-group-item" v-for="(item, key) in textlist">{{key + 1}}. {{item.pid}} - {{item}}</li>
+        </ol>
+    </div>
+
+    <div class="row alert alert-info" v-show="connected">
+        {{srv}}
+    </div>
+</div>
+<script src="vue/dist/vue.js"></script>
+<script src="jquery/dist/jquery.min.js"></script>
+<script src="bootstrap/dist/js/bootstrap.js"></script>
+<script src="socket.io-client/dist/socket.io.js"></script>
+<script>
+    var vue = new Vue({
+        data:{
+            title:'Hello vue ~',
+            userData:{},//用户数据
+            statData:{},//统计数据
+            textlist:[],//消息内容
+            srv:null,
+            url:'wss://' + window.location.hostname+":"+window.location.port,
+            options:{
+                path:'/weather',
+                secure: true,
+                autoConnect:true,
+                transports:['websocket'],
+                query:{token:Date.now()}
+            },
+            connected:false,
+        },
+        mounted:function () {
+          this.join();
+        },
+        methods:{
+            join:function () {
+                var that = this;
+                var socket = this.socket = io.connect(that.url, this.options);
+                socket.on('connect', function(){
+                    that.connected = true;
+                    console.log('socket join', that.url, that.options.path,'接入成功');
+                    that.joinHandler(socket);
+                });
+                socket.on('disconnect', function(){
+                    that.connected = false;
+                    that.userData.pid = '';
+                });
+
+                socket.on('error', function(){
+                    that.connected = false;
+                    that.userData.pid = '';
+                });
+            },
+            joinHandler:function (socket) {
+                var that = this;
+                socket.on('enterSucess', function(data){
+                    that.userData = data;
+                    console.log(data);
+                });
+
+                socket.on('chat', function (data) {
+                    that.textlist.push(data);
+                });
+
+                socket.on('srv', function (data) {
+                    //that.srv = data.env;
+                });
+            },
+            send:function(){
+                var text = textinput.value;
+                if(text){
+                    this.socket.emit('chat', {text:text});
+                }else{
+                    alert('发送的内容不能是空消息');
+                }
+            },
+            level:function () {
+                if(this.connected){
+                    this.socket.close();
+                }
+            }
+        }
+    }).$mount('#app');
+</script>
+</body>
+</html>

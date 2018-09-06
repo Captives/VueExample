@@ -1,0 +1,19 @@
+{
+  "apps": [
+    {
+      "name": "UUABC Redis",
+      "script": "server.js",
+      "env": {
+        "NODE_DEV": "dev"
+      },
+      "env_production": {
+        "NODE_DEV": "production"
+      },
+      "instances": 4,
+      "exec_mode": "cluster",
+      "max_restarts": 3,
+      "restart_delay": 5000,
+      "node-args": "--nouse-idle-notification --gc_global --max-old-space-size=2048 --max-new-space-size=1024"
+    }
+  ]
+}
